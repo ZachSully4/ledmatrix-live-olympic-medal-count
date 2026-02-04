@@ -69,8 +69,8 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
         data_settings = self.config.get("data_settings", {})
 
         self.view_mode: str = display_opts.get("view_mode", "top5")
-        self.scroll_speed: float = float(display_opts.get("scroll_speed", 1.0))
-        self.scroll_delay: float = float(display_opts.get("scroll_delay", 0.001))
+        self.scroll_speed: float = float(display_opts.get("scroll_speed", 2.0))
+        self.scroll_delay: float = float(display_opts.get("scroll_delay", 0.05))
         self.target_fps: int = int(display_opts.get("target_fps", 120))
 
         self.update_interval: int = int(data_settings.get("update_interval", 300))
@@ -91,6 +91,9 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
         self.scroll_helper.set_scroll_speed(self.scroll_speed)
         self.scroll_helper.set_scroll_delay(self.scroll_delay)
         self.scroll_helper.set_target_fps(self.target_fps)
+
+        # Enable high FPS scrolling mode (required for 125 FPS display loop)
+        self.enable_scrolling = True
 
         # --- Data state ---
         self.countries: List[Dict[str, Any]] = []
@@ -499,8 +502,8 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
         data_settings = self.config.get("data_settings", {})
 
         self.view_mode = display_opts.get("view_mode", "top5")
-        self.scroll_speed = float(display_opts.get("scroll_speed", 1.0))
-        self.scroll_delay = float(display_opts.get("scroll_delay", 0.001))
+        self.scroll_speed = float(display_opts.get("scroll_speed", 2.0))
+        self.scroll_delay = float(display_opts.get("scroll_delay", 0.05))
         self.target_fps = int(display_opts.get("target_fps", 120))
 
         self.scroll_helper.set_scroll_speed(self.scroll_speed)
