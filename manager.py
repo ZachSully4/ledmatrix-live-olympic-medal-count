@@ -69,8 +69,8 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
         data_settings = self.config.get("data_settings", {})
 
         self.view_mode: str = display_opts.get("view_mode", "top5")
-        self.scroll_speed: float = float(display_opts.get("scroll_speed", 2.0))
-        self.scroll_delay: float = float(display_opts.get("scroll_delay", 0.03))
+        self.scroll_speed: float = float(display_opts.get("scroll_speed", 1.0))
+        self.scroll_delay: float = float(display_opts.get("scroll_delay", 0.02))
         self.target_fps: int = int(display_opts.get("target_fps", 120))
 
         self.update_interval: int = int(data_settings.get("update_interval", 300))
@@ -414,38 +414,65 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
             self.needs_initial_render = False
 
     def display(self, force_clear: bool = False) -> None:
-        """Advance the scroll and push the visible frame to the matrix."""
-        if force_clear:
-            self.display_manager.clear()
+        """
+        Advance the scroll and push the visible frame to the matrix.
 
-        # Ensure we have a scrolling image
-        if self.needs_initial_render:
-            return
+        Matches the live-player-stats scroll loop: detects wrap-around
+        and resets distance tracking so the scroll loops indefinitely.
+        """
+        try:
+            if force_clear:
+                self.display_manager.clear()
 
-        # Advance scroll
-        self.scroll_helper.update_scroll_position()
+            # Ensure we have a scrolling image
+            if self.needs_initial_render:
+                return
 
-        # Get the visible window
-        visible = self.scroll_helper.get_visible_portion()
-        if visible is None:
-            return
+            # Record position before update for wrap detection
+            old_pos = self.scroll_helper.scroll_position
 
-        # Push to display
-        if (
-            not hasattr(self.display_manager, "image")
-            or self.display_manager.image is None
-            or self.display_manager.image.size != (self.width, self.height)
-        ):
-            self.display_manager.image = Image.new("RGB", (self.width, self.height), COLOR_BLACK)
+            # Advance scroll
+            self.scroll_helper.update_scroll_position()
 
-        if visible.size == (self.width, self.height):
-            self.display_manager.image.paste(visible, (0, 0))
-        else:
-            self.display_manager.image.paste(
-                visible.resize((self.width, self.height), Image.LANCZOS), (0, 0)
-            )
+            # Detect wrap-around (position jumped backward significantly)
+            new_pos = self.scroll_helper.scroll_position
+            wrapped = (old_pos - new_pos) > self.scroll_helper.display_width
 
-        self.display_manager.update_display()
+            if wrapped:
+                self.logger.info(
+                    "Scroll wrap detected (%.0f -> %.0f)", old_pos, new_pos
+                )
+                # Reset distance tracking to keep the scroll looping indefinitely
+                self.scroll_helper.scroll_complete = False
+                self.scroll_helper.total_distance_scrolled = 0.0
+
+            # Get the visible window
+            visible = self.scroll_helper.get_visible_portion()
+            if visible is None:
+                return
+
+            # Push to display
+            if (
+                not hasattr(self.display_manager, "image")
+                or self.display_manager.image is None
+                or self.display_manager.image.size != (self.width, self.height)
+            ):
+                self.display_manager.image = Image.new(
+                    "RGB", (self.width, self.height), COLOR_BLACK
+                )
+
+            if visible.size == (self.width, self.height):
+                self.display_manager.image.paste(visible, (0, 0))
+            else:
+                visible = visible.resize(
+                    (self.width, self.height), Image.Resampling.LANCZOS
+                )
+                self.display_manager.image.paste(visible, (0, 0))
+
+            self.display_manager.update_display()
+
+        except Exception as e:
+            self.logger.error("Error displaying medal count: %s", e, exc_info=True)
 
     # ------------------------------------------------------------------
     # Duration / cycle support
@@ -472,8 +499,8 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
         data_settings = self.config.get("data_settings", {})
 
         self.view_mode = display_opts.get("view_mode", "top5")
-        self.scroll_speed = float(display_opts.get("scroll_speed", 2.0))
-        self.scroll_delay = float(display_opts.get("scroll_delay", 0.03))
+        self.scroll_speed = float(display_opts.get("scroll_speed", 1.0))
+        self.scroll_delay = float(display_opts.get("scroll_delay", 0.02))
         self.target_fps = int(display_opts.get("target_fps", 120))
 
         self.scroll_helper.set_scroll_speed(self.scroll_speed)
