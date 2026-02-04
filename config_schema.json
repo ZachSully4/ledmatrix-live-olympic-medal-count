@@ -14,28 +14,28 @@
           "type": "string",
           "enum": ["top5", "usa_only"],
           "default": "top5",
-          "description": "Display mode: 'top5' cycles through the top 5 countries, 'usa_only' shows only USA medal counts."
+          "description": "Display mode: 'top5' scrolls through the top N countries, 'usa_only' shows only USA medal counts."
         },
-        "cycle_interval": {
+        "scroll_speed": {
           "type": "number",
-          "default": 10,
-          "minimum": 3,
-          "maximum": 60,
-          "description": "Seconds to display each country before cycling to the next (Top 5 mode only)."
-        },
-        "header_scroll_speed": {
-          "type": "number",
-          "default": 1.0,
+          "default": 2.0,
           "minimum": 0.5,
           "maximum": 5.0,
-          "description": "Speed of the header text scroll in pixels per frame."
+          "description": "Scroll speed in pixels per frame."
+        },
+        "scroll_delay": {
+          "type": "number",
+          "default": 0.03,
+          "minimum": 0.005,
+          "maximum": 0.1,
+          "description": "Delay in seconds between scroll steps (lower = faster)."
         },
         "target_fps": {
           "type": "integer",
-          "default": 30,
-          "minimum": 10,
-          "maximum": 120,
-          "description": "Target frames per second for display rendering."
+          "default": 120,
+          "minimum": 30,
+          "maximum": 200,
+          "description": "Target frames per second for smooth scrolling."
         }
       },
       "additionalProperties": false
