@@ -69,7 +69,7 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
         data_settings = self.config.get("data_settings", {})
 
         self.view_mode: str = display_opts.get("view_mode", "top5")
-        self.scroll_speed: float = float(display_opts.get("scroll_speed", 0.1))
+        self.scroll_speed: float = float(display_opts.get("scroll_speed", 1.0))
         self.scroll_delay: float = float(display_opts.get("scroll_delay", 0.001))
         self.target_fps: int = int(display_opts.get("target_fps", 120))
 
@@ -499,7 +499,7 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
         data_settings = self.config.get("data_settings", {})
 
         self.view_mode = display_opts.get("view_mode", "top5")
-        self.scroll_speed = float(display_opts.get("scroll_speed", 0.1))
+        self.scroll_speed = float(display_opts.get("scroll_speed", 1.0))
         self.scroll_delay = float(display_opts.get("scroll_delay", 0.001))
         self.target_fps = int(display_opts.get("target_fps", 120))
 

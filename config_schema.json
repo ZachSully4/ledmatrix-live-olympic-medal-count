@@ -18,7 +18,7 @@
         },
         "scroll_speed": {
           "type": "number",
-          "default": 0.1,
+          "default": 1.0,
           "minimum": 0.05,
           "maximum": 5.0,
           "description": "Pixels to move per scroll step (lower = smoother)."
