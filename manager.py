@@ -38,8 +38,8 @@ API_URL = "https://apis.codante.io/olympic-games/countries"
 HEADER_TEXT = "MILANO CORTINA 2026"
 
 # Flag dimensions — bigger now that the full display height is available
-FLAG_WIDTH = 24
-FLAG_HEIGHT = 16
+FLAG_WIDTH = 36
+FLAG_HEIGHT = 24
 
 
 class LiveOlympicMedalCountPlugin(BasePlugin):
