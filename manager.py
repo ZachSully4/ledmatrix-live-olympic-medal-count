@@ -129,7 +129,7 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
             if press_start.exists():
                 self.font_header = ImageFont.truetype(str(press_start), 10)
                 self.font_country = ImageFont.truetype(str(press_start), 10)
-                self.font_medals = ImageFont.truetype(str(press_start), 8)
+                self.font_medals = ImageFont.truetype(str(press_start), 10)
             elif small_font.exists():
                 self.font_header = ImageFont.truetype(str(small_font), 8)
                 self.font_country = ImageFont.truetype(str(small_font), 8)
@@ -336,14 +336,14 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
         rc_w = rc_bbox[2] - rc_bbox[0]
         rc_h = rc_bbox[3] - rc_bbox[1]
 
-        # Medal sections: each is [dot(6px) + gap(2) + number + gap(6)]
-        dot_size = 6
-        medal_gap = 6
+        # Medal sections: each is [dot(10px) + gap(4) + number + gap(8)]
+        dot_size = 10
+        medal_gap = 8
         medal_section_w = 0
         for count in (gold, silver, bronze):
             count_str = str(count)
             cb = tmp_draw.textbbox((0, 0), count_str, font=self.font_medals)
-            medal_section_w += dot_size + 3 + (cb[2] - cb[0]) + medal_gap
+            medal_section_w += dot_size + 4 + (cb[2] - cb[0]) + medal_gap
 
         gap_after_text = 6
         gap_after_flag = 8
@@ -378,7 +378,7 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
                 [x, dot_y, x + dot_size, dot_y + dot_size],
                 fill=color,
             )
-            x += dot_size + 3
+            x += dot_size + 4
 
             # Draw count number
             count_str = str(count)
