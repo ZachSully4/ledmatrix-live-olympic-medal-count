@@ -18,17 +18,17 @@
         },
         "scroll_speed": {
           "type": "number",
-          "default": 1.0,
-          "minimum": 0.5,
-          "maximum": 5.0,
+          "default": 2.0,
+          "minimum": 0.1,
+          "maximum": 10.0,
           "description": "Scroll speed in pixels per frame."
         },
         "scroll_delay": {
           "type": "number",
-          "default": 0.02,
-          "minimum": 0.005,
-          "maximum": 0.1,
-          "description": "Delay in seconds between scroll steps (lower = faster)."
+          "default": 0.05,
+          "minimum": 0.001,
+          "maximum": 1.0,
+          "description": "Delay between scroll frames in seconds."
         },
         "target_fps": {
           "type": "integer",
