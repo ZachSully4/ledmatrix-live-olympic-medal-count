@@ -1,0 +1,3 @@
+# Dependencies are satisfied by the core LEDMatrix framework:
+# - requests
+# - Pillow (PIL)

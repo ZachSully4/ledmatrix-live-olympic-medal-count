@@ -1,0 +1,72 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "properties": {
+    "enabled": {
+      "type": "boolean",
+      "default": true,
+      "description": "Enable or disable the Olympic Medal Count plugin."
+    },
+    "display_options": {
+      "type": "object",
+      "properties": {
+        "view_mode": {
+          "type": "string",
+          "enum": ["top5", "usa_only"],
+          "default": "top5",
+          "description": "Display mode: 'top5' cycles through the top 5 countries, 'usa_only' shows only USA medal counts."
+        },
+        "cycle_interval": {
+          "type": "number",
+          "default": 10,
+          "minimum": 3,
+          "maximum": 60,
+          "description": "Seconds to display each country before cycling to the next (Top 5 mode only)."
+        },
+        "header_scroll_speed": {
+          "type": "number",
+          "default": 1.0,
+          "minimum": 0.5,
+          "maximum": 5.0,
+          "description": "Speed of the header text scroll in pixels per frame."
+        },
+        "target_fps": {
+          "type": "integer",
+          "default": 30,
+          "minimum": 10,
+          "maximum": 120,
+          "description": "Target frames per second for display rendering."
+        }
+      },
+      "additionalProperties": false
+    },
+    "data_settings": {
+      "type": "object",
+      "properties": {
+        "update_interval": {
+          "type": "integer",
+          "default": 300,
+          "minimum": 60,
+          "maximum": 3600,
+          "description": "How often (in seconds) to fetch fresh data from the API."
+        },
+        "cache_ttl": {
+          "type": "integer",
+          "default": 300,
+          "minimum": 60,
+          "maximum": 3600,
+          "description": "Cache time-to-live in seconds for API responses."
+        },
+        "top_n_countries": {
+          "type": "integer",
+          "default": 5,
+          "minimum": 3,
+          "maximum": 10,
+          "description": "Number of top countries to display in Top N mode."
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

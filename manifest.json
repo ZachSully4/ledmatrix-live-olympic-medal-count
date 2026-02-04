@@ -1,0 +1,19 @@
+{
+  "id": "live-olympic-medal-count",
+  "name": "Live Olympic Medal Count",
+  "version": "1.0.0",
+  "author": "LEDMatrix User",
+  "description": "Displays a live-updating leaderboard of the 2026 Milano Cortina Winter Olympics medal count, cycling through the top countries with gold, silver, and bronze totals.",
+  "category": "sports",
+  "tags": ["sports", "olympics", "medals", "winter-olympics", "2026"],
+  "entry_point": "manager.py",
+  "class_name": "LiveOlympicMedalCountPlugin",
+  "display_modes": ["live-olympic-medal-count"],
+  "config_schema": "config_schema.json",
+  "update_interval": 300,
+  "default_duration": 50,
+  "compatible_versions": [">=2.0.0"],
+  "dependencies": {
+    "managers": []
+  }
+}
