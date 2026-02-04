@@ -9,6 +9,7 @@ API: https://apis.codante.io/olympic-games/countries
 API Version: 1.0.0
 """
 
+import io
 import logging
 import os
 import time
@@ -34,6 +35,10 @@ COLOR_DARK_GRAY = (60, 60, 60)
 # --- API ---
 API_URL = "https://apis.codante.io/olympic-games/countries"
 HEADER_TEXT = "MILANO CORTINA 2026"
+
+# Flag dimensions for LED matrix (width x height in pixels)
+FLAG_WIDTH = 12
+FLAG_HEIGHT = 8
 
 
 class LiveOlympicMedalCountPlugin(BasePlugin):
@@ -84,6 +89,9 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
         # Header scroll state
         self.header_scroll_x: float = 0.0
 
+        # Flag image cache: country_code -> PIL.Image (resized)
+        self._flag_cache: Dict[str, Optional[Image.Image]] = {}
+
         # Frame timing
         self.last_frame_time: float = time.time()
         self.frame_interval: float = 1.0 / self.target_fps
@@ -128,6 +136,50 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
             self.font_header = ImageFont.load_default()
             self.font_country = ImageFont.load_default()
             self.font_medals = ImageFont.load_default()
+
+    # ------------------------------------------------------------------
+    # Flag loading
+    # ------------------------------------------------------------------
+    def _get_flag(self, country: Dict[str, Any]) -> Optional[Image.Image]:
+        """
+        Get a country's flag image, downloading and caching as needed.
+
+        Uses the ``flag_url`` field returned by the API. Images are
+        downloaded once, resized to FLAG_WIDTH x FLAG_HEIGHT, converted
+        to RGB, and kept in an in-memory dict for the lifetime of the
+        plugin.
+        """
+        code = str(country.get("id", "")).upper()
+        if not code:
+            return None
+
+        # Return from memory cache if available
+        if code in self._flag_cache:
+            return self._flag_cache[code]
+
+        flag_url = country.get("flag_url")
+        if not flag_url:
+            self._flag_cache[code] = None
+            return None
+
+        try:
+            resp = requests.get(flag_url, timeout=10)
+            resp.raise_for_status()
+            img = Image.open(io.BytesIO(resp.content))
+            img = img.convert("RGB")
+            img = img.resize((FLAG_WIDTH, FLAG_HEIGHT), Image.LANCZOS)
+            self._flag_cache[code] = img
+            self.logger.debug("Cached flag for %s (%dx%d)", code, FLAG_WIDTH, FLAG_HEIGHT)
+            return img
+        except Exception as exc:
+            self.logger.warning("Could not fetch flag for %s: %s", code, exc)
+            self._flag_cache[code] = None
+            return None
+
+    def _prefetch_flags(self, countries: List[Dict[str, Any]]) -> None:
+        """Download flags for all countries in the list that aren't cached yet."""
+        for country in countries:
+            self._get_flag(country)
 
     # ------------------------------------------------------------------
     # Data fetching
@@ -200,6 +252,8 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
         if now - self.last_fetch_time >= self.update_interval or not self.countries:
             self.countries = self.fetch_data()
             self.last_fetch_time = now
+            # Pre-download flags so display() never blocks on network I/O
+            self._prefetch_flags(self.countries)
 
     def display(self, force_clear: bool = False) -> None:
         """Render the current frame to the LED matrix."""
@@ -223,9 +277,9 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
 
         # --- Body ---
         if self.view_mode == "usa_only":
-            self._draw_usa_only(draw, header_height)
+            self._draw_usa_only(draw, img, header_height)
         else:
-            self._draw_top_n(draw, header_height, now)
+            self._draw_top_n(draw, img, header_height, now)
 
         # Push to display
         self.display_manager.image = img
@@ -268,7 +322,7 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
 
         return sep_y + 2  # return y-offset for body content
 
-    def _draw_top_n(self, draw: ImageDraw.ImageDraw, y_start: int, now: float) -> None:
+    def _draw_top_n(self, draw: ImageDraw.ImageDraw, img: Image.Image, y_start: int, now: float) -> None:
         """Draw the current country in the Top-N rotation."""
         if not self.countries:
             self._draw_no_data(draw, y_start)
@@ -284,9 +338,9 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
 
         country = self.countries[self.current_country_index]
         rank = self.current_country_index + 1
-        self._draw_country_card(draw, country, rank, y_start)
+        self._draw_country_card(draw, img, country, rank, y_start)
 
-    def _draw_usa_only(self, draw: ImageDraw.ImageDraw, y_start: int) -> None:
+    def _draw_usa_only(self, draw: ImageDraw.ImageDraw, img: Image.Image, y_start: int) -> None:
         """Draw only the USA entry."""
         usa = None
         for i, c in enumerate(self.countries):
@@ -308,11 +362,12 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
             self._draw_no_data(draw, y_start, "USA DATA N/A")
             return
 
-        self._draw_country_card(draw, usa, usa.get("rank", "?"), y_start)
+        self._draw_country_card(draw, img, usa, usa.get("rank", "?"), y_start)
 
     def _draw_country_card(
         self,
         draw: ImageDraw.ImageDraw,
+        img: Image.Image,
         country: Dict[str, Any],
         rank: Any,
         y_start: int,
@@ -321,7 +376,7 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
         Render a single country's medal card.
 
         Layout (within available body area):
-            Line 1: #rank  COUNTRY_CODE
+            Line 1: [flag] #rank  COUNTRY_CODE
             Line 2: [gold dot] NN  [silver dot] NN  [bronze dot] NN
             Line 3: Total: NN
         """
@@ -334,14 +389,20 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
         body_height = self.height - y_start
         line_h = max(body_height // 3, 8)
         y = y_start
+        x_cursor = 2
 
-        # --- Line 1: Rank + Country Code ---
+        # --- Line 1: Flag + Rank + Country Code ---
+        flag_img = self._get_flag(country)
+        if flag_img is not None:
+            img.paste(flag_img, (x_cursor, y))
+            x_cursor += FLAG_WIDTH + 2
+
         rank_text = f"#{rank}"
-        draw.text((2, y), rank_text, font=self.font_medals, fill=COLOR_DARK_GRAY)
+        draw.text((x_cursor, y), rank_text, font=self.font_medals, fill=COLOR_DARK_GRAY)
         rank_bbox = draw.textbbox((0, 0), rank_text, font=self.font_medals)
         rank_w = rank_bbox[2] - rank_bbox[0]
 
-        code_x = rank_w + 6
+        code_x = x_cursor + rank_w + 4
         draw.text((code_x, y), code, font=self.font_country, fill=COLOR_WHITE)
         y += line_h
 
