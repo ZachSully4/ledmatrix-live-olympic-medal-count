@@ -34,8 +34,23 @@ COLOR_BRONZE = (205, 127, 50)
 COLOR_DARK_GRAY = (80, 80, 80)
 
 # --- API ---
-API_URL = "https://apis.codante.io/olympic-games/countries"
+# ESPN scraping URL for 2026 Winter Olympics (to be implemented)
+ESPN_MEDALS_URL = "https://www.espn.com/olympics/winter/2026/medals"
 HEADER_TEXT = "MILANO CORTINA 2026"
+
+# Placeholder data for top Winter Olympics countries (until scraping is implemented)
+PLACEHOLDER_COUNTRIES = [
+    {"id": "NOR", "name": "Norway", "gold_medals": 0, "silver_medals": 0, "bronze_medals": 0, "total_medals": 0, "flag_url": "https://flagcdn.com/w80/no.png"},
+    {"id": "GER", "name": "Germany", "gold_medals": 0, "silver_medals": 0, "bronze_medals": 0, "total_medals": 0, "flag_url": "https://flagcdn.com/w80/de.png"},
+    {"id": "USA", "name": "United States", "gold_medals": 0, "silver_medals": 0, "bronze_medals": 0, "total_medals": 0, "flag_url": "https://flagcdn.com/w80/us.png"},
+    {"id": "CAN", "name": "Canada", "gold_medals": 0, "silver_medals": 0, "bronze_medals": 0, "total_medals": 0, "flag_url": "https://flagcdn.com/w80/ca.png"},
+    {"id": "SWE", "name": "Sweden", "gold_medals": 0, "silver_medals": 0, "bronze_medals": 0, "total_medals": 0, "flag_url": "https://flagcdn.com/w80/se.png"},
+    {"id": "SUI", "name": "Switzerland", "gold_medals": 0, "silver_medals": 0, "bronze_medals": 0, "total_medals": 0, "flag_url": "https://flagcdn.com/w80/ch.png"},
+    {"id": "AUT", "name": "Austria", "gold_medals": 0, "silver_medals": 0, "bronze_medals": 0, "total_medals": 0, "flag_url": "https://flagcdn.com/w80/at.png"},
+    {"id": "ITA", "name": "Italy", "gold_medals": 0, "silver_medals": 0, "bronze_medals": 0, "total_medals": 0, "flag_url": "https://flagcdn.com/w80/it.png"},
+    {"id": "FRA", "name": "France", "gold_medals": 0, "silver_medals": 0, "bronze_medals": 0, "total_medals": 0, "flag_url": "https://flagcdn.com/w80/fr.png"},
+    {"id": "NED", "name": "Netherlands", "gold_medals": 0, "silver_medals": 0, "bronze_medals": 0, "total_medals": 0, "flag_url": "https://flagcdn.com/w80/nl.png"},
+]
 
 # Flag dimensions — bigger now that the full display height is available
 FLAG_WIDTH = 36
@@ -192,63 +207,31 @@ class LiveOlympicMedalCountPlugin(BasePlugin):
     # ------------------------------------------------------------------
     def fetch_data(self) -> List[Dict[str, Any]]:
         """
-        Fetch medal data from the Olympic Games API.
+        Return placeholder medal data for 2026 Winter Olympics.
 
-        Returns a sorted list of countries. Falls back to cached data
-        when the API is unreachable.
+        TODO: Implement ESPN scraping when medals are awarded.
+        For now, returns static placeholder data for top Winter Olympics countries.
         """
-        cache_key = f"{self.plugin_id}_medal_data"
+        # Use placeholder data until ESPN scraping is implemented
+        data = PLACEHOLDER_COUNTRIES.copy()
 
-        if self.cache_manager:
-            cached = self.cache_manager.get(cache_key, max_age=self.cache_ttl)
-            if cached:
-                self.logger.debug("Using cached medal data (%d countries)", len(cached))
-                return cached
+        # Sort: primary by gold_medals desc, secondary by total_medals desc
+        data.sort(
+            key=lambda c: (c.get("gold_medals", 0), c.get("total_medals", 0)),
+            reverse=True,
+        )
 
-        try:
-            response = requests.get(API_URL, timeout=15)
-            response.raise_for_status()
-            payload = response.json()
-            data = payload.get("data", [])
+        # In usa_only mode keep all data so we can find USA regardless of rank
+        if self.view_mode == "usa_only":
+            top_countries = data
+        else:
+            top_countries = data[: self.top_n]
 
-            # Sort: primary by gold_medals desc, secondary by total_medals desc
-            data.sort(
-                key=lambda c: (c.get("gold_medals", 0), c.get("total_medals", 0)),
-                reverse=True,
-            )
-
-            # In usa_only mode keep all data so we can find USA regardless of rank
-            if self.view_mode == "usa_only":
-                top_countries = data
-            else:
-                top_countries = data[: self.top_n]
-
-            if self.cache_manager:
-                self.cache_manager.set(cache_key, top_countries)
-
-            self.logger.info(
-                "Fetched medal data — top country: %s (%d gold)",
-                top_countries[0].get("id", "???") if top_countries else "N/A",
-                top_countries[0].get("gold_medals", 0) if top_countries else 0,
-            )
-            return top_countries
-
-        except requests.exceptions.Timeout:
-            self.logger.warning("API request timed out — using stale cache if available")
-        except requests.exceptions.ConnectionError:
-            self.logger.warning("API connection error — using stale cache if available")
-        except requests.exceptions.HTTPError as exc:
-            self.logger.warning("API HTTP error %s — using stale cache if available", exc)
-        except Exception as exc:
-            self.logger.error("Unexpected error fetching medal data: %s", exc, exc_info=True)
-
-        if self.cache_manager:
-            stale = self.cache_manager.get(cache_key)
-            if stale:
-                self.logger.info("Returning stale cached data (%d countries)", len(stale))
-                return stale
-
-        return []
+        self.logger.info(
+            "Using placeholder data — %d countries (ESPN scraping not yet implemented)",
+            len(top_countries),
+        )
+        return top_countries
 
     # ------------------------------------------------------------------
     # Scrolling content rendering
